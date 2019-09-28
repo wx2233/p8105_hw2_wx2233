@@ -8,15 +8,15 @@ output: github_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+
 ```
 
 ## Problem 1
-### Read and clean the Mr. Trash Wheel sheet
+### Mr. Trash Wheel
 ```{r}
 Wheel_data = 
- readxl::read_excel("./data/HealthyHarborWaterWheelTotals2018-7-28.xlsx",sheet = 1) %>%  #import data from sheet 1
+ readxl::read_excel("./data/HealthyHarborWaterWheelTotals2018-7-28.xlsx",sheet = "Mr. Trash Wheel", range = "A2:N338") %>%  #import data from sheet 1
   janitor::clean_names() %>%  #use reasonable variable names
-  select(everything(),waste_energy_plant = x15) %>% 
   drop_na(dumpster) %>% #omit rows that do not include dumpster-specific data
   mutate(
     sports_balls = as.integer(round(sports_balls))
@@ -25,8 +25,9 @@ Wheel_data =
 Wheel_data
 ```
 
-### Read and clean precipitation data for 2017 and 2018
+### Precipitation data for 2017 and 2018
 
+#### Load and tidy the data
 ```{r}
 pre_data_2017 = 
  readxl::read_excel("./data/HealthyHarborWaterWheelTotals2018-7-28.xlsx",sheet = "2017 Precipitation",range = "A3:B14",col_names = c("month","precipitation")) %>%#import data from sheet 2017 Precipitation 
@@ -35,29 +36,42 @@ pre_data_2017 =
     year = rep("2017")
   )
   
-
 pre_data_2018 = 
  readxl::read_excel("./data/HealthyHarborWaterWheelTotals2018-7-28.xlsx",sheet = "2018 Precipitation",range = "A3:B14",col_names = c("month","precipitation")) %>%#import data from sheet 2018 Precipitation 
   drop_na(precipitation) %>% 
   mutate(
     year = rep("2018")
   )
+```
 
+#### Combine the data
+```{r}
 combine_pre_data = 
   bind_rows(pre_data_2017,pre_data_2018) %>% 
   mutate(
     month = month.abb[as.numeric(month)],
     precipitation = as.numeric(precipitation)
-  )
+  ) %>% 
+  select(year, everything())
 
 combine_pre_data 
 
-
+#tidy the combination
 combine_pre_tidy_data = 
   combine_pre_data %>% 
-  pivot_wider(names_from = year,
+  pivot_wider(names_from = month,
               values_from = precipitation)
-sum_pre_2018 = sum(pull(combine_pre_tidy_data,"2018"),na.rm = TRUE)
+combine_pre_tidy_data
+```
+
+#### Calculation and explaination
+```{r}
+sum_pre_2018 = 
+  filter(combine_pre_tidy_data, year == "2018") %>%
+  select(-year) %>% 
+  as.numeric() %>% 
+  sum(na.rm = TRUE)
+
 median_sb_2017 = 
   filter(Wheel_data,year == "2017") %>% 
   pull(sports_balls) %>% 
@@ -67,22 +81,22 @@ median_sb_2017 =
 Wheel data has 285 observations and 15 variables:
 
 * dumpster: the id of dumpster
-* month: the month of observation
 * year: the year of observation
+* month: the month of observation
 * date: the date of observation
 * weight_tons: the whole weight of waste
 * volume_cubic_yards: the volume of cubic yards waste
 * plastic_bottles, polystyrene, chips_bag, glass_bottles, grocery_bags, chip_bags, sports_balls, homes_powered are different types of waste.
 
-Combination of precipitation data has 3 variables and 13 observations.
-The second and the third column represent the precipitation for 2017 and 2018.
+Combination of precipitation data has 19 observations of 3 variables:
+* month: the month of observation
+* year: the year of observation
 
 * The total precipitation in 2018 is `r sum_pre_2018`
 * The median number of sports balls in a dumpster in 2017 is `r median_sb_2017`
 
 
 ## Problem 2
-
 ### pols-month data
 ```{r}
 #pols_month
@@ -91,8 +105,7 @@ pols_month = read_csv("./data/pols-month.csv") %>%
   separate(mon, into = c("year", "month", "day"), sep = "-") %>% 
   mutate(
     month = month.abb[as.numeric(month)],
-    prez_gop = as.character(prez_gop),
-    president = recode(prez_gop,  "0" = "dem",  "1" = "gop")  # create a president variable
+    president = recode(prez_gop,  "0" = "dem",  "1" = "gop", "2" = "gop_2")  # create a president variable
   ) %>% 
   select(everything(),ends_with("gop"), ends_with("dem"), -prez_dem, -prez_gop, -day)
 
@@ -109,12 +122,12 @@ snp_data = read_csv("./data/snp.csv") %>%
   mutate(
     month = month.abb[as.numeric(month)]
   ) %>% 
-  select(year, month, everything(),-day)
+  select(year, month, everything())
 
 snp_data
 ```
 
-## unemployment data
+### unemployment data
 ```{r}
 #unemployment
 unemployment_data = read_csv("./data/unemployment.csv") %>% 
@@ -125,21 +138,16 @@ unemployment_data = read_csv("./data/unemployment.csv") %>%
   rename(year = Year) %>% 
   mutate(
     year = as.character(year)
-  ) %>% 
-  drop_na(unemployment)
+  ) 
 
 unemployment_data
 
 ```
 
-
-
 ### Merge and join
 ```{r}
-join_data = left_join(pols_month, snp_data, by = c('year','month')) # can join by multiple variables 
-
-final_join = left_join(join_data, unemployment_data,by = c('year','month'))
-
+join_data = left_join(pols_month, snp_data, by = c('year','month')) # join pols and snp
+final_join = left_join(join_data, unemployment_data,by = c('year','month')) #join unemployment
 final_join
 ```
 
@@ -156,50 +164,54 @@ The "pols_month" contains 822 observations (from Jan, 1947 to Jun, 2015) of 9 va
 * president: indicator of whether the president was republican or democratic the associated month of the associated year (1 = republican, 0 = democratic)
 
 
-The "snp_data" contains 787 observations (from Jan, 1950 to Jun, 2015) of 3 variables: 
+The "snp_data" contains 787 observations (from Jan, 1950 to Ju1, 2015) of 3 variables: 
 
 * year: the year of observation
 * month: the month of observation
 * close: the closing values of the S&P stock index on the associated month of the associated year
 
 
-The "unemployment_data" contains 816 observations (from Jan, 1948 to Jun, 2015) of 3 variables: 
+The "unemployment_data" contains 816 observations (from Jan, 1948 to Dec, 2015) of 3 variables: 
 
 * year: the year of observation
 * month: the month of observation
 * unemployment: percentage of unemployment in the associated month of the associated year
 
 
+The "final_join"data contains 822 observation(from Jan, 1947 to Jun, 2015) of 12 variables:"year","month","gov_gop","sen_gop","rep_gop", "gov_dem","sen_dem","rep_dem","president","day","close","unemployment" So some variables such as unemployment has "NA".
 
 ## Problem 3
-
+### Load and tidy the data
 ```{r}
-
 Popular_baby = read_csv("./data/Popular_Baby_Names.csv")  %>% 
   janitor::clean_names() %>% 
   select(year_of_birth, childs_first_name,everything()) %>% 
   mutate(
      gender = str_to_lower(gender),
-     ethnicity = str_to_lower(ethnicity)
+     ethnicity = str_to_lower(ethnicity),  
+     ethnicity = recode(ethnicity, 
+                        "asian and paci" = "asian and pacific islander",
+                        "black non hisp" = "black non hispanic",
+                        "white non hisp" = "white non hispanic"),#recode ethnicity
+     childs_first_name = str_to_title(childs_first_name)  #Capitalize
+
   ) %>% 
   distinct()
+
 Popular_baby
 ```
-
-Produce a well-structured, reader-friendly table showing the rank in popularity of the name “Olivia” as a female baby name over time; this should have rows for ethnicities and columns for year. Produce a similar table showing the most popular name among male children over time.
-
-Finally, for male, white non-hispanic children born in 2016, produce a scatter plot showing the number of children with a name (y axis) against the rank in popularity of that name (x axis)
 
 ### Compare the rank of Olivia
 ```{r}
 Olivia = Popular_baby %>% 
   filter(childs_first_name == "Olivia", gender == "female") %>% 
-  select(-count) %>% 
+  select(-count,) %>% 
   pivot_wider(
-    names_from = ethnicity,
+    names_from = year_of_birth,
     values_from = rank
-) %>% 
-  arrange(year_of_birth,desc(year_of_birth))
+  )
+# ) %>% 
+#   arrange(year_of_birth,desc(year_of_birth))
 Olivia
 ```
 

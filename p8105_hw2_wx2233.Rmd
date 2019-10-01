@@ -15,7 +15,7 @@ library(tidyverse)
 ### Mr. Trash Wheel
 ```{r}
 Wheel_data = 
- readxl::read_excel("./data/HealthyHarborWaterWheelTotals2018-7-28.xlsx",sheet = "Mr. Trash Wheel", range = "A2:N338") %>%  #import data from sheet 1
+ readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet = "Mr. Trash Wheel", range = "A2:N338") %>%  #import data from sheet 1
   janitor::clean_names() %>%  #use reasonable variable names
   drop_na(dumpster) %>% #omit rows that do not include dumpster-specific data
   mutate(
@@ -223,6 +223,7 @@ male_name_2016_wnh = Popular_baby %>%
 male_name_2016_wnh %>% 
   ggplot(aes(x = rank, y = count)) +
   geom_point() +
+  # geom_text(aes(label=childs_first_name)) +
   geom_smooth(se = FALSE)
 
 ```

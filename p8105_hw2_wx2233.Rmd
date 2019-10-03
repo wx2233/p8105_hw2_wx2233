@@ -30,14 +30,14 @@ Wheel_data
 #### Load and tidy the data
 ```{r}
 pre_data_2017 = 
- readxl::read_excel("./data/HealthyHarborWaterWheelTotals2018-7-28.xlsx",sheet = "2017 Precipitation",range = "A3:B14",col_names = c("month","precipitation")) %>%#import data from sheet 2017 Precipitation 
+ readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet = "2017 Precipitation",range = "A3:B14",col_names = c("month","precipitation")) %>%#import data from sheet 2017 Precipitation 
   drop_na(precipitation) %>% 
   mutate(
     year = rep("2017")
   )
   
 pre_data_2018 = 
- readxl::read_excel("./data/HealthyHarborWaterWheelTotals2018-7-28.xlsx",sheet = "2018 Precipitation",range = "A3:B14",col_names = c("month","precipitation")) %>%#import data from sheet 2018 Precipitation 
+ readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet = "2018 Precipitation",range = "A3:B14",col_names = c("month","precipitation")) %>%#import data from sheet 2018 Precipitation 
   drop_na(precipitation) %>% 
   mutate(
     year = rep("2018")

@@ -19,7 +19,9 @@ Wheel_data =
   janitor::clean_names() %>%  #use reasonable variable names
   drop_na(dumpster) %>% #omit rows that do not include dumpster-specific data
   mutate(
-    sports_balls = as.integer(round(sports_balls))
+    sports_balls = sports_balls %>% 
+      round() %>% 
+      as.integer()
   )
 
 Wheel_data
@@ -56,7 +58,7 @@ combine_pre_data =
 
 combine_pre_data 
 
-#tidy the combination
+####Tidier combination
 combine_pre_tidy_data = 
   combine_pre_data %>% 
   pivot_wider(names_from = month,

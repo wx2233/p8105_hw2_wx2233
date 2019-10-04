@@ -38,7 +38,8 @@ pre_data_2017 =
   mutate(
     year = rep("2017")
   )
-  
+pre_data_2017
+
 pre_data_2018 = 
  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet = "2018 Precipitation",range = "A2:B15") %>% #import data from sheet 2018 Precipitation 
   janitor::clean_names() %>% 
@@ -46,6 +47,7 @@ pre_data_2018 =
   mutate(
     year = rep("2018")
   )
+pre_data_2018
 ```
 
 #### Combine the data

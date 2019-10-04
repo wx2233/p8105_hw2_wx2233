@@ -3,12 +3,12 @@ title: "p8105_hw2_wx2233"
 author: "Weijia Xiong"
 date: "9/24/2019"
 output: github_document
+
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-
 ```
 
 ## Problem 1
@@ -32,15 +32,17 @@ Wheel_data
 #### Load and tidy the data
 ```{r}
 pre_data_2017 = 
- readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet = "2017 Precipitation",range = "A3:B14",col_names = c("month","precipitation")) %>%#import data from sheet 2017 Precipitation 
-  drop_na(precipitation) %>% 
+ readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet = "2017 Precipitation",range = "A2:B15") %>%
+  janitor::clean_names() %>% #import data from sheet 2017 Precipitation 
+  drop_na(month) %>% 
   mutate(
     year = rep("2017")
   )
   
 pre_data_2018 = 
- readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet = "2018 Precipitation",range = "A3:B14",col_names = c("month","precipitation")) %>%#import data from sheet 2018 Precipitation 
-  drop_na(precipitation) %>% 
+ readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet = "2018 Precipitation",range = "A2:B15") %>% #import data from sheet 2018 Precipitation 
+  janitor::clean_names() %>% 
+  drop_na(month) %>% 
   mutate(
     year = rep("2018")
   )
@@ -52,25 +54,19 @@ combine_pre_data =
   bind_rows(pre_data_2017,pre_data_2018) %>% 
   mutate(
     month = month.abb[as.numeric(month)],
-    precipitation = as.numeric(precipitation)
+    total = as.numeric(total)
   ) %>% 
   select(year, everything())
 
 combine_pre_data 
 
-####Tidier combination
-combine_pre_tidy_data = 
-  combine_pre_data %>% 
-  pivot_wider(names_from = month,
-              values_from = precipitation)
-combine_pre_tidy_data
 ```
 
 #### Calculation and explaination
 ```{r}
 sum_pre_2018 = 
-  filter(combine_pre_tidy_data, year == "2018") %>%
-  select(-year) %>% 
+  filter(combine_pre_data, year == "2018") %>%
+  pull(total) %>% 
   as.numeric() %>% 
   sum(na.rm = TRUE)
 
@@ -91,8 +87,10 @@ Wheel data has 285 observations and 15 variables:
 * plastic_bottles, polystyrene, chips_bag, glass_bottles, grocery_bags, chip_bags, sports_balls, homes_powered are different types of waste.
 
 Combination of precipitation data has 19 observations of 3 variables:
+
 * month: the month of observation
 * year: the year of observation
+* total: the total precipitation
 
 * The total precipitation in 2018 is `r sum_pre_2018`
 * The median number of sports balls in a dumpster in 2017 is `r median_sb_2017`
@@ -120,9 +118,13 @@ pols_month
 snp_data = read_csv("./data/snp.csv") %>% 
   janitor::clean_names() %>% 
   separate(date, into = c("month", "day","year"), sep = "/") %>% 
+  
+  mutate(
+    month = as.numeric(month)
+  ) %>% 
   arrange(year, month) %>% 
   mutate(
-    month = month.abb[as.numeric(month)]
+    month = month.abb[month]
   ) %>% 
   select(year, month, everything())
 
@@ -148,8 +150,8 @@ unemployment_data
 
 ### Merge and join
 ```{r}
-join_data = left_join(pols_month, snp_data, by = c('year','month')) # join pols and snp
-final_join = left_join(join_data, unemployment_data,by = c('year','month')) #join unemployment
+join_data = left_join(pols_month, snp_data, by = c("year","month")) # join pols and snp
+final_join = left_join(join_data, unemployment_data,by = c("year","month")) #join unemployment
 final_join
 ```
 
@@ -179,7 +181,6 @@ The "unemployment_data" contains 816 observations (from Jan, 1948 to Dec, 2015) 
 * month: the month of observation
 * unemployment: percentage of unemployment in the associated month of the associated year
 
-
 The "final_join"data contains 822 observation(from Jan, 1947 to Jun, 2015) of 12 variables:"year","month","gov_gop","sen_gop","rep_gop", "gov_dem","sen_dem","rep_dem","president","day","close","unemployment" So some variables such as unemployment has "NA".
 
 ## Problem 3
@@ -207,26 +208,46 @@ Popular_baby
 ```{r}
 Olivia = Popular_baby %>% 
   filter(childs_first_name == "Olivia", gender == "female") %>% 
-  select(-count,) %>% 
+  select(-count,-gender,-childs_first_name) %>% 
   pivot_wider(
     names_from = year_of_birth,
     values_from = rank
-  )
-# ) %>% 
-#   arrange(year_of_birth,desc(year_of_birth))
+  ) %>% 
+  knitr::kable()
 Olivia
 ```
+
+
+### The most popular name among male children over time.
+```{r}
+Popular_name = Popular_baby %>% 
+  filter(gender == "male", rank == "1") %>% 
+  select(-rank,-gender,-count) %>% 
+  pivot_wider(
+    names_from = year_of_birth,
+    values_from = childs_first_name
+  ) %>% 
+  knitr::kable()
+Popular_name
+```
+
 
 ### Scatter plot for white non hispanic male in 2016
 ```{r}
 male_name_2016_wnh = Popular_baby %>% 
   filter(gender == "male", year_of_birth == "2016", ethnicity == "white non hispanic")
+male_name_2016_wnh
 
 male_name_2016_wnh %>% 
   ggplot(aes(x = rank, y = count)) +
   geom_point() +
   # geom_text(aes(label=childs_first_name)) +
-  geom_smooth(se = FALSE)
+  geom_smooth(se = FALSE) +
+  labs(
+    title = "White Non-Hispanic Children(male) Born in 2016",
+    x = "rank",
+    y = "count"
+  )
 
 ```
 
